@@ -45,6 +45,7 @@ export type FromServer =
       users: {
         [key: string]: {
           username: string;
+          url: string;
           cursor: {
             x: number;
             y: number;

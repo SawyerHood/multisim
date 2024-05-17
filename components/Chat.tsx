@@ -18,7 +18,7 @@ export function Chat() {
   const [draftMessage, setDraftMessage] = useState("");
   const [multiplayerState, dispatch] = useAtom(multiplayerStateAtom);
   const messages = multiplayerState.chatMessages.map((message, index) => {
-    const username = multiplayerState.users[message.id]?.username ?? message.id;
+    const username = multiplayerState.users[message.id]?.username ?? "anon";
     return (
       <Message key={index} username={username} message={message.message} />
     );

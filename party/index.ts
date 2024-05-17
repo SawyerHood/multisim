@@ -17,7 +17,7 @@ export default class Server implements Party.Server {
 
   private userMap: Map<
     string,
-    { name: string; cursor: { x: number; y: number } }
+    { username: string; cursor: { x: number; y: number }; url: string }
   > = new Map();
 
   private chatMessages: ChatMessage[] = [];
@@ -26,7 +26,7 @@ export default class Server implements Party.Server {
 
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
     const path = new URL(ctx.request.url).pathname;
-    if (path === "/client") {
+    if (path.endsWith("client")) {
       const users: Record<
         string,
         { username: string; cursor: { x: number; y: number } }
@@ -34,7 +34,7 @@ export default class Server implements Party.Server {
 
       for (const [id, user] of Array.from(this.userMap.entries())) {
         users[id] = {
-          username: user.name,
+          username: user.username,
           cursor: user.cursor,
         };
       }
@@ -45,7 +45,11 @@ export default class Server implements Party.Server {
           chatMessages: this.chatMessages,
         })
       );
-      this.userMap.set(conn.id, { name: "anon", cursor: { x: 0, y: 0 } });
+      this.userMap.set(conn.id, {
+        username: "anon",
+        cursor: { x: 0, y: 0 },
+        url: "",
+      });
       return;
     }
     const searchParams = new URL(ctx.request.url).searchParams;
@@ -86,8 +90,9 @@ export default class Server implements Party.Server {
   onMessage(message: string, sender: Party.Connection) {
     const parsedMessage: FromClient = JSON.parse(message);
     const user = this.userMap.get(sender.id) ?? {
-      name: "anon",
+      username: "anon",
       cursor: { x: 0, y: 0 },
+      url: "",
     };
     if (parsedMessage.type === "mouse") {
       const { x, y } = parsedMessage;
@@ -97,11 +102,14 @@ export default class Server implements Party.Server {
       );
     } else if (parsedMessage.type === "url") {
       const { url } = parsedMessage;
-      this.room.broadcast(JSON.stringify({ type: "url", url }), [sender.id]);
+      user.url = url;
+      this.room.broadcast(
+        JSON.stringify({ type: "url", url, sender: sender.id })
+      );
     } else if (parsedMessage.type === "setUsername") {
       console.log("setting username", parsedMessage.username);
       const { username } = parsedMessage;
-      user.name = username;
+      user.username = username;
       this.room.broadcast(
         JSON.stringify({ type: "setUsername", username, sender: sender.id })
       );

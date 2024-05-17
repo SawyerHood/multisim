@@ -7,7 +7,6 @@ type MultiplayerState = {
     [key: string]: Player;
   };
 
-  currentUrl: string;
   chatMessages: ChatMessage[];
   socket: PartySocket | null;
 };
@@ -15,6 +14,7 @@ type MultiplayerState = {
 type Player = {
   username: string;
   cursor: Cursor;
+  url: string;
 };
 
 type Cursor = {
@@ -29,7 +29,6 @@ export type ChatMessage = {
 
 const internalMultiplayerStateAtom = atom<MultiplayerState>({
   users: {},
-  currentUrl: "",
   chatMessages: [],
   socket: null,
 });
@@ -43,26 +42,39 @@ internalMultiplayerStateAtom.onMount = (set) => {
 
   socket.onmessage = (event) => {
     const parsedMessage: FromServer = JSON.parse(event.data);
-    const getCurrentUser = (state: MultiplayerState) => {
-      return state.users[socket.id];
+    const getUser = (state: MultiplayerState, id: string) => {
+      return (
+        state.users[id] ?? {
+          username: "anon",
+          cursor: { x: 0, y: 0 },
+          url: "",
+        }
+      );
     };
     if (parsedMessage.type === "mouse") {
       const { type, x, y, sender } = parsedMessage;
       set((prev) => {
-        const currentUser = getCurrentUser(prev) ?? {
-          username: "anon",
-          cursor: { x: 0, y: 0 },
-        };
+        const user = getUser(prev, sender);
         return {
           ...prev,
           users: {
             ...prev.users,
-            [sender]: { ...currentUser, cursor: { x, y } },
+            [sender]: { ...user, cursor: { x, y } },
           },
         };
       });
     } else if (parsedMessage.type === "url") {
-      set((prev) => ({ ...prev, currentUrl: parsedMessage.url }));
+      const { type, url, sender } = parsedMessage;
+      set((prev) => {
+        const user = getUser(prev, sender);
+        return {
+          ...prev,
+          users: {
+            ...prev.users,
+            [sender]: { ...user, url: parsedMessage.url },
+          },
+        };
+      });
     } else if (parsedMessage.type === "close") {
       set((prev) => {
         const newState = { ...prev, users: { ...prev.users } };
@@ -72,16 +84,13 @@ internalMultiplayerStateAtom.onMount = (set) => {
     } else if (parsedMessage.type === "setUsername") {
       console.log("setting username", parsedMessage.username);
       set((prev) => {
-        const currentUser = getCurrentUser(prev) ?? {
-          username: "anon",
-          cursor: { x: 0, y: 0 },
-        };
+        const user = getUser(prev, parsedMessage.sender);
         return {
           ...prev,
           users: {
             ...prev.users,
             [parsedMessage.sender]: {
-              ...currentUser,
+              ...user,
               username: parsedMessage.username,
             },
           },
