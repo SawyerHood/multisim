@@ -3,22 +3,25 @@ import { createClient } from "@/ai/client";
 import { ChatCompletionCreateParamsStreaming } from "openai/resources/index.mjs";
 import { system } from "@/ai/prompt";
 import { FromClient } from "@/shared/rpc";
-import type { ChatMessage } from "@/state/multiplayer";
+import type { ChatMessage, User } from "@/state/multiplayer";
 
 export default class Server implements Party.Server {
   private pageCache: Map<
     string,
     {
       cachedPage: string;
-      connections: Party.Connection[];
       status: "downloading" | "done";
+      emitter: EventEmitter<
+        | {
+            type: "update";
+            chunk: string;
+          }
+        | { type: "finish" }
+      >;
     }
   > = new Map();
 
-  private userMap: Map<
-    string,
-    { username: string; cursor: { x: number; y: number }; url: string }
-  > = new Map();
+  private userMap: Map<string, User> = new Map();
 
   private chatMessages: ChatMessage[] = [];
 
@@ -27,15 +30,13 @@ export default class Server implements Party.Server {
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
     const path = new URL(ctx.request.url).pathname;
     if (path.endsWith("client")) {
-      const users: Record<
-        string,
-        { username: string; cursor: { x: number; y: number } }
-      > = {};
+      const users: Record<string, User> = {};
 
       for (const [id, user] of Array.from(this.userMap.entries())) {
         users[id] = {
           username: user.username,
           cursor: user.cursor,
+          url: user.url,
         };
       }
       conn.send(
@@ -51,39 +52,6 @@ export default class Server implements Party.Server {
         url: "",
       });
       return;
-    }
-    const searchParams = new URL(ctx.request.url).searchParams;
-    const pageId = decodeURIComponent(searchParams.get("page") ?? "");
-    let cachedPage = this.pageCache.get(pageId);
-
-    if (!cachedPage) {
-      cachedPage = {
-        cachedPage: "",
-        connections: [],
-        status: "downloading",
-      };
-      this.pageCache.set(pageId, cachedPage);
-      spawnLLMResponse(this, pageId);
-    }
-
-    if (cachedPage.status === "done") {
-      conn.send(
-        JSON.stringify({
-          type: "update",
-          data: { pageId, chunk: cachedPage.cachedPage },
-        })
-      );
-      conn.send(JSON.stringify({ type: "finish", data: { pageId } }));
-    }
-
-    if (cachedPage.status === "downloading") {
-      cachedPage.connections.push(conn);
-      conn.send(
-        JSON.stringify({
-          type: "update",
-          data: { pageId, chunk: cachedPage.cachedPage },
-        })
-      );
     }
   }
 
@@ -135,21 +103,64 @@ export default class Server implements Party.Server {
     const cachedPage = this.pageCache.get(page);
     if (!cachedPage) return;
     cachedPage.cachedPage += chunk;
-    for (const conn of cachedPage.connections) {
-      conn.send(
-        JSON.stringify({ type: "update", data: { pageId: page, chunk } })
-      );
-    }
+    cachedPage.emitter.emit({ type: "update", chunk });
   }
 
   finishPage(page: string) {
     const cachedPage = this.pageCache.get(page);
     if (!cachedPage) return;
     cachedPage.status = "done";
-    for (const conn of cachedPage.connections) {
-      conn.send(JSON.stringify({ type: "finish", data: { pageId: page } }));
+    cachedPage.emitter.emit({ type: "finish" });
+  }
+
+  onRequest(req: Party.Request): Response | Promise<Response> {
+    if (!new URL(req.url).pathname.endsWith("portal")) {
+      return new Response("", { status: 404 });
     }
-    cachedPage.connections = [];
+
+    const searchParams = new URL(req.url).searchParams;
+    const pageId = decodeURIComponent(searchParams.get("page") ?? "");
+    let cachedPage = this.pageCache.get(pageId);
+
+    if (!cachedPage) {
+      cachedPage = {
+        cachedPage: "",
+        status: "downloading",
+        emitter: new EventEmitter(),
+      };
+      this.pageCache.set(pageId, cachedPage);
+      spawnLLMResponse(this, pageId);
+    }
+
+    if (cachedPage.status === "done") {
+      return new Response(cachedPage.cachedPage, {
+        status: 200,
+        headers: { "Content-Type": "text/html" },
+      });
+    }
+
+    return new Response(
+      new ReadableStream({
+        async start(controller) {
+          const page = cachedPage!;
+          controller.enqueue(page.cachedPage);
+          const unsub = page.emitter.sub((event) => {
+            if (event.type === "update") {
+              controller.enqueue(event.chunk);
+            } else if (event.type === "finish") {
+              unsub();
+              controller.close();
+            }
+          });
+        },
+      }).pipeThrough(new TextEncoderStream()),
+      {
+        headers: {
+          "Content-Type": "text/html",
+        },
+        status: 200,
+      }
+    );
   }
 }
 
@@ -188,7 +199,7 @@ export async function spawnLLMResponse(server: Server, page: string) {
       const match = programResult.match(/<head>/);
       if (match) {
         programResult =
-          '<!DOCTYPE html><html><head><script src="/bootstrap.js"></script>\n' +
+          '<!DOCTYPE html><html><head><script src="http://localhost:3000/bootstrap.js"></script>\n' +
           programResult.slice(match.index! + match[0].length);
         server.updatePage(page, programResult);
         sentIndex = programResult.length;
@@ -225,11 +236,26 @@ async function createProgramStream({
     stream: true,
   };
 
-  console.log(params);
-
   const stream = await createClient(
     process.env.OPENAI_API_KEY!
   ).chat.completions.create(params);
 
   return stream;
+}
+
+class EventEmitter<TEvent> {
+  private listeners = new Set<(event: TEvent) => void>();
+
+  sub(listener: (event: TEvent) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  emit(event: TEvent) {
+    for (const listener of Array.from(this.listeners)) {
+      listener(event);
+    }
+  }
 }

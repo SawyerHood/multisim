@@ -15,7 +15,7 @@ export default function Home() {
   }
   return (
     <Grid
-      columns="1fr 1024px 1fr"
+      columns="226px 1024px 1fr"
       height="100vh"
       width="100%"
       py="8"
