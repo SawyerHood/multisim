@@ -3,19 +3,18 @@ import { atom } from "jotai";
 import PartySocket from "partysocket";
 
 type MultiplayerState = {
-  players: {
+  users: {
     [key: string]: Player;
   };
-  cursors: {
-    [key: string]: Cursor;
-  };
+
   currentUrl: string;
   chatMessages: ChatMessage[];
   socket: PartySocket | null;
 };
 
 type Player = {
-  name: string;
+  username: string;
+  cursor: Cursor;
 };
 
 type Cursor = {
@@ -23,14 +22,13 @@ type Cursor = {
   y: number;
 };
 
-type ChatMessage = {
-  playerId: string;
+export type ChatMessage = {
+  id: string;
   message: string;
 };
 
 const internalMultiplayerStateAtom = atom<MultiplayerState>({
-  players: {},
-  cursors: {},
+  users: {},
   currentUrl: "",
   chatMessages: [],
   socket: null,
@@ -42,16 +40,63 @@ internalMultiplayerStateAtom.onMount = (set) => {
     path: "client",
     room: "my-room",
   });
+
   socket.onmessage = (event) => {
     const parsedMessage: FromServer = JSON.parse(event.data);
+    const getCurrentUser = (state: MultiplayerState) => {
+      return state.users[socket.id];
+    };
     if (parsedMessage.type === "mouse") {
       const { type, x, y, sender } = parsedMessage;
-      set((prev) => ({
-        ...prev,
-        cursors: { ...prev.cursors, [sender]: { x, y } },
-      }));
+      set((prev) => {
+        const currentUser = getCurrentUser(prev) ?? {
+          username: "anon",
+          cursor: { x: 0, y: 0 },
+        };
+        return {
+          ...prev,
+          users: {
+            ...prev.users,
+            [sender]: { ...currentUser, cursor: { x, y } },
+          },
+        };
+      });
     } else if (parsedMessage.type === "url") {
       set((prev) => ({ ...prev, currentUrl: parsedMessage.url }));
+    } else if (parsedMessage.type === "close") {
+      set((prev) => {
+        const newState = { ...prev, users: { ...prev.users } };
+        delete newState.users[parsedMessage.sender];
+        return newState;
+      });
+    } else if (parsedMessage.type === "setUsername") {
+      console.log("setting username", parsedMessage.username);
+      set((prev) => {
+        const currentUser = getCurrentUser(prev) ?? {
+          username: "anon",
+          cursor: { x: 0, y: 0 },
+        };
+        return {
+          ...prev,
+          users: {
+            ...prev.users,
+            [parsedMessage.sender]: {
+              ...currentUser,
+              username: parsedMessage.username,
+            },
+          },
+        };
+      });
+    } else if (parsedMessage.type === "init") {
+      set((prev) => ({ ...prev, users: parsedMessage.users }));
+    } else if (parsedMessage.type === "sendMessage") {
+      set((prev) => ({
+        ...prev,
+        chatMessages: [
+          ...prev.chatMessages,
+          { id: parsedMessage.sender, message: parsedMessage.message },
+        ],
+      }));
     }
   };
 
@@ -72,6 +117,14 @@ export type MultiplayerAction =
   | {
       type: "changeUrl";
       url: string;
+    }
+  | {
+      type: "setUsername";
+      username: string;
+    }
+  | {
+      type: "sendMessage";
+      message: string;
     };
 
 export const multiplayerStateAtom = atom<
@@ -86,6 +139,12 @@ export const multiplayerStateAtom = atom<
       ws.send(JSON.stringify({ type: "mouse", x: action.x, y: action.y }));
     } else if (action.type === "changeUrl") {
       ws.send(JSON.stringify({ type: "url", url: action.url }));
+    } else if (action.type === "setUsername") {
+      ws.send(
+        JSON.stringify({ type: "setUsername", username: action.username })
+      );
+    } else if (action.type === "sendMessage") {
+      ws.send(JSON.stringify({ type: "sendMessage", message: action.message }));
     }
   }
 );

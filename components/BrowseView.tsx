@@ -1,21 +1,24 @@
 "use client";
 
-import { FileTextIcon, MagnifyingGlassIcon } from "@radix-ui/react-icons";
-import { Box, Container, Flex, TextField } from "@radix-ui/themes";
-import usePartySocket from "partysocket/react";
-import { useEffect, useRef, useState } from "react";
-import cursor from "./cursor.svg";
-import Image from "next/image";
-import { useAtom } from "jotai";
+import { FileTextIcon } from "@radix-ui/react-icons";
+import { Box, Flex, TextField, Text } from "@radix-ui/themes";
+import { useEffect, useRef } from "react";
+import { useAtom, useAtomValue } from "jotai";
 import { multiplayerStateAtom } from "@/state/multiplayer";
+import { usernameAtom } from "@/state/username";
+import { Cursor } from "./Cursor";
 
 export function BrowseView() {
   const [multiplayerState, dispatch] = useAtom(multiplayerStateAtom);
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const username = useAtomValue(usernameAtom);
 
-  const cursors = multiplayerState.cursors;
+  const users = multiplayerState.users;
   const url = multiplayerState.currentUrl;
+  const myID = multiplayerState.socket?.id;
+
+  console.log(multiplayerState);
 
   useEffect(() => {
     if (inputRef.current?.value !== url) {
@@ -43,8 +46,15 @@ export function BrowseView() {
     };
   }, [dispatch]);
 
+  useEffect(() => {
+    dispatch({
+      type: "setUsername",
+      username: username || "anon",
+    });
+  }, [dispatch, username]);
+
   return (
-    <Flex direction="column" flexGrow="1" p="8" width="1024px" align="stretch">
+    <Flex direction="column" flexGrow="1" width="1024px" align="stretch">
       <Box width="100%">
         <form
           ref={formRef}
@@ -79,22 +89,48 @@ export function BrowseView() {
           name="output"
           id="output"
         />
-        {Object.entries(cursors).map(([id, { x, y }]) => (
-          <Image
-            key={id}
-            alt="cursor"
-            src={cursor}
-            width={16}
-            height={16}
-            style={{
-              position: "absolute",
-              left: x,
-              top: y,
-              color: "red",
-            }}
-          />
-        ))}
+        {Object.entries(users).map(([id, { username: name, cursor }]) => {
+          if (!cursor) return null;
+          if (id === myID) return null;
+          return (
+            <Flex
+              style={{ position: "absolute", left: cursor.x, top: cursor.y }}
+              key={id}
+              direction="column"
+              align="start"
+            >
+              <Cursor color={CURSOR_COLORS[hashUserNameForColor(name)]} />
+              <Box
+                style={{
+                  background: CURSOR_COLORS[hashUserNameForColor(name)],
+                }}
+                ml="4"
+                py="0"
+                px="1"
+              >
+                <Text>{username}</Text>
+              </Box>
+            </Flex>
+          );
+        })}
       </div>
     </Flex>
+  );
+}
+
+const CURSOR_COLORS = [
+  "red",
+  "blue",
+  "green",
+  "yellow",
+  "purple",
+  "orange",
+  "black",
+];
+
+function hashUserNameForColor(name: string) {
+  return (
+    name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) %
+    CURSOR_COLORS.length
   );
 }

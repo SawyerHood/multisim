@@ -3,6 +3,7 @@ import { createClient } from "@/ai/client";
 import { ChatCompletionCreateParamsStreaming } from "openai/resources/index.mjs";
 import { system } from "@/ai/prompt";
 import { FromClient } from "@/shared/rpc";
+import type { ChatMessage } from "@/state/multiplayer";
 
 export default class Server implements Party.Server {
   private pageCache: Map<
@@ -14,11 +15,37 @@ export default class Server implements Party.Server {
     }
   > = new Map();
 
+  private userMap: Map<
+    string,
+    { name: string; cursor: { x: number; y: number } }
+  > = new Map();
+
+  private chatMessages: ChatMessage[] = [];
+
   constructor(readonly room: Party.Room) {}
 
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
     const path = new URL(ctx.request.url).pathname;
     if (path === "/client") {
+      const users: Record<
+        string,
+        { username: string; cursor: { x: number; y: number } }
+      > = {};
+
+      for (const [id, user] of Array.from(this.userMap.entries())) {
+        users[id] = {
+          username: user.name,
+          cursor: user.cursor,
+        };
+      }
+      conn.send(
+        JSON.stringify({
+          type: "init",
+          users,
+          chatMessages: this.chatMessages,
+        })
+      );
+      this.userMap.set(conn.id, { name: "anon", cursor: { x: 0, y: 0 } });
       return;
     }
     const searchParams = new URL(ctx.request.url).searchParams;
@@ -58,16 +85,42 @@ export default class Server implements Party.Server {
 
   onMessage(message: string, sender: Party.Connection) {
     const parsedMessage: FromClient = JSON.parse(message);
+    const user = this.userMap.get(sender.id) ?? {
+      name: "anon",
+      cursor: { x: 0, y: 0 },
+    };
     if (parsedMessage.type === "mouse") {
       const { x, y } = parsedMessage;
+      user.cursor = { x, y };
       this.room.broadcast(
-        JSON.stringify({ type: "mouse", x, y, sender: sender.id }),
-        [sender.id]
+        JSON.stringify({ type: "mouse", x, y, sender: sender.id })
       );
     } else if (parsedMessage.type === "url") {
       const { url } = parsedMessage;
       this.room.broadcast(JSON.stringify({ type: "url", url }), [sender.id]);
+    } else if (parsedMessage.type === "setUsername") {
+      console.log("setting username", parsedMessage.username);
+      const { username } = parsedMessage;
+      user.name = username;
+      this.room.broadcast(
+        JSON.stringify({ type: "setUsername", username, sender: sender.id })
+      );
+    } else if (parsedMessage.type === "sendMessage") {
+      const { message } = parsedMessage;
+      this.chatMessages.push({ id: sender.id, message });
+      this.room.broadcast(
+        JSON.stringify({ type: "sendMessage", message, sender: sender.id })
+      );
     }
+
+    this.userMap.set(sender.id, user);
+  }
+
+  onClose(connection: Party.Connection<unknown>): void | Promise<void> {
+    this.userMap.delete(connection.id);
+    this.room.broadcast(
+      JSON.stringify({ type: "close", sender: connection.id })
+    );
   }
 
   updatePage(page: string, chunk: string) {
