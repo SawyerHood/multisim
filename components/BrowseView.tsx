@@ -15,19 +15,7 @@ export function BrowseView() {
   const username = useAtomValue(usernameAtom);
 
   const users = multiplayerState.users;
-  const url = multiplayerState.currentUrl;
   const myID = multiplayerState.socket?.id;
-
-  console.log(multiplayerState);
-
-  useEffect(() => {
-    if (inputRef.current?.value !== url) {
-      inputRef.current!.value = url;
-      setTimeout(() => {
-        formRef.current?.submit();
-      }, 0);
-    }
-  }, [url]);
 
   useEffect(() => {
     const messageListener = (event: MessageEvent) => {
@@ -89,9 +77,10 @@ export function BrowseView() {
           name="output"
           id="output"
         />
-        {Object.entries(users).map(([id, { username: name, cursor }]) => {
+        {Object.entries(users).map(([id, { username, cursor, url }]) => {
           if (!cursor) return null;
           if (id === myID) return null;
+          if (users[myID!]?.url !== url) return null;
           return (
             <Flex
               style={{ position: "absolute", left: cursor.x, top: cursor.y }}
@@ -99,10 +88,10 @@ export function BrowseView() {
               direction="column"
               align="start"
             >
-              <Cursor color={CURSOR_COLORS[hashUserNameForColor(name)]} />
+              <Cursor color={CURSOR_COLORS[hashUserNameForColor(id)]} />
               <Box
                 style={{
-                  background: CURSOR_COLORS[hashUserNameForColor(name)],
+                  background: CURSOR_COLORS[hashUserNameForColor(id)],
                 }}
                 ml="4"
                 py="0"
@@ -128,9 +117,9 @@ const CURSOR_COLORS = [
   "black",
 ];
 
-function hashUserNameForColor(name: string) {
+function hashUserNameForColor(id: string) {
   return (
-    name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) %
+    id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0) %
     CURSOR_COLORS.length
   );
 }
