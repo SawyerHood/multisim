@@ -3,6 +3,7 @@
 import { BrowseView } from "@/components/BrowseView";
 import { Chat } from "@/components/Chat";
 import { Login } from "@/components/Login";
+import { Portals } from "@/components/Portals";
 import { usernameAtom } from "@/state/username";
 import { Grid } from "@radix-ui/themes";
 import { useAtomValue } from "jotai";
@@ -21,7 +22,7 @@ export default function Home() {
       px="4"
       gap="4"
     >
-      <div></div>
+      <Portals />
       <BrowseView />
       <Chat />
     </Grid>
