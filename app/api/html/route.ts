@@ -1,6 +1,3 @@
-import { createClient } from "@/ai/client";
-
-import { ChatCompletionCreateParamsStreaming } from "openai/resources/index.mjs";
 import PartySocket from "partysocket";
 
 export async function POST(req: Request) {
@@ -13,6 +10,7 @@ export async function POST(req: Request) {
         const ws = new PartySocket({
           host: "localhost:1999",
           room: "my-room",
+          path: "server",
           query: { page: user },
         });
 

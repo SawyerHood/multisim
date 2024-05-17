@@ -2,6 +2,7 @@ import type * as Party from "partykit/server";
 import { createClient } from "@/ai/client";
 import { ChatCompletionCreateParamsStreaming } from "openai/resources/index.mjs";
 import { system } from "@/ai/prompt";
+import { FromClient } from "@/shared/rpc";
 
 export default class Server implements Party.Server {
   private pageCache: Map<
@@ -17,6 +18,9 @@ export default class Server implements Party.Server {
 
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
     const path = new URL(ctx.request.url).pathname;
+    if (path === "/client") {
+      return;
+    }
     const searchParams = new URL(ctx.request.url).searchParams;
     const pageId = decodeURIComponent(searchParams.get("page") ?? "");
     let cachedPage = this.pageCache.get(pageId);
@@ -53,14 +57,17 @@ export default class Server implements Party.Server {
   }
 
   onMessage(message: string, sender: Party.Connection) {
-    // let's log the message
-    console.log(`connection ${sender.id} sent message: ${message}`);
-    // as well as broadcast it to all the other connections in the room...
-    this.room.broadcast(
-      `${sender.id}: ${message}`,
-      // ...except for the connection it came from
-      [sender.id]
-    );
+    const parsedMessage: FromClient = JSON.parse(message);
+    if (parsedMessage.type === "mouse") {
+      const { x, y } = parsedMessage;
+      this.room.broadcast(
+        JSON.stringify({ type: "mouse", x, y, sender: sender.id }),
+        [sender.id]
+      );
+    } else if (parsedMessage.type === "url") {
+      const { url } = parsedMessage;
+      this.room.broadcast(JSON.stringify({ type: "url", url }), [sender.id]);
+    }
   }
 
   updatePage(page: string, chunk: string) {
@@ -117,9 +124,11 @@ export async function spawnLLMResponse(server: Server, page: string) {
         sentIndex = programResult.length;
       }
     } else {
-      const match = programResult.match(/<html/);
+      const match = programResult.match(/<head>/);
       if (match) {
-        programResult = "<!DOCTYPE html>\n" + programResult.slice(match.index!);
+        programResult =
+          '<!DOCTYPE html><html><head><script src="/bootstrap.js"></script>\n' +
+          programResult.slice(match.index! + match[0].length);
         server.updatePage(page, programResult);
         sentIndex = programResult.length;
         startedSending = true;
