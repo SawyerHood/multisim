@@ -4,14 +4,14 @@ import PartySocket from "partysocket";
 
 type MultiplayerState = {
   users: {
-    [key: string]: Player;
+    [key: string]: User;
   };
 
   chatMessages: ChatMessage[];
   socket: PartySocket | null;
 };
 
-type Player = {
+export type User = {
   username: string;
   cursor: Cursor;
   url: string;
