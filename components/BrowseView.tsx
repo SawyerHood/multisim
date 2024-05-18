@@ -133,9 +133,9 @@ export function BrowseView() {
             );
           }
         )}
-        <Box position="absolute" right="4" bottom="4">
+        {/* <Box position="absolute" right="4" bottom="4">
           <Chat />
-        </Box>
+        </Box> */}
       </div>
     </Flex>
   );
