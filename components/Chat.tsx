@@ -1,11 +1,13 @@
 import { multiplayerStateAtom } from "@/state/multiplayer";
-import { PaperPlaneIcon } from "@radix-ui/react-icons";
+import { ChatBubbleIcon, PaperPlaneIcon } from "@radix-ui/react-icons";
 import {
   Box,
   Card,
   Flex,
   Heading,
+  HoverCard,
   IconButton,
+  Popover,
   ScrollArea,
   Text,
   TextField,
@@ -30,45 +32,54 @@ export function Chat() {
     }
   }, [scrollRef, multiplayerState.chatMessages.length]);
   return (
-    <Card style={{ width: "100%", height: "100%" }}>
-      <Flex
-        direction="column"
-        gap="10px"
-        style={{ width: "100%", height: "100%" }}
-      >
-        <Heading>Chat</Heading>
-        <ScrollArea style={{ width: "100%", height: "100%" }} ref={scrollRef}>
-          <Flex direction="column" gap="2">
-            {messages}
-          </Flex>
-        </ScrollArea>
-        <Box width="100%">
-          <form
-            style={{ display: "contents" }}
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (draftMessage.trim().length > 0) {
-                dispatch({ type: "sendMessage", message: draftMessage });
-                setDraftMessage("");
-              }
-            }}
-          >
-            <TextField.Root
-              value={draftMessage}
-              onChange={(e) => setDraftMessage(e.target.value)}
-              placeholder="Send a message"
+    <Popover.Root>
+      <Popover.Trigger>
+        <IconButton radius="full">
+          <ChatBubbleIcon width="16" height="16" />
+        </IconButton>
+      </Popover.Trigger>
+      <Popover.Content side="top">
+        {/* <Card style={{ width: "100%", height: "100%" }}> */}
+        <Flex
+          direction="column"
+          gap="10px"
+          style={{ width: "100%", height: "100%" }}
+        >
+          <Heading>Chat</Heading>
+          <ScrollArea style={{ width: "100%", height: "100%" }} ref={scrollRef}>
+            <Flex direction="column" gap="2">
+              {messages}
+            </Flex>
+          </ScrollArea>
+          <Box width="100%">
+            <form
+              style={{ display: "contents" }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (draftMessage.trim().length > 0) {
+                  dispatch({ type: "sendMessage", message: draftMessage });
+                  setDraftMessage("");
+                }
+              }}
             >
-              <TextField.Slot></TextField.Slot>
-              <TextField.Slot>
-                <IconButton type="submit" variant="ghost">
-                  <PaperPlaneIcon width="16" height="16" />
-                </IconButton>
-              </TextField.Slot>
-            </TextField.Root>
-          </form>
-        </Box>
-      </Flex>
-    </Card>
+              <TextField.Root
+                value={draftMessage}
+                onChange={(e) => setDraftMessage(e.target.value)}
+                placeholder="Send a message"
+              >
+                <TextField.Slot></TextField.Slot>
+                <TextField.Slot>
+                  <IconButton type="submit" variant="ghost">
+                    <PaperPlaneIcon width="16" height="16" />
+                  </IconButton>
+                </TextField.Slot>
+              </TextField.Root>
+            </form>
+          </Box>
+        </Flex>
+        {/* </Card> */}
+      </Popover.Content>
+    </Popover.Root>
   );
 }
 

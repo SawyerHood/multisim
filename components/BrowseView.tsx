@@ -9,6 +9,7 @@ import { usernameAtom } from "@/state/username";
 import { Cursor } from "./Cursor";
 import { cssVarFromId } from "@/shared/colors";
 import { urlAtom } from "@/state/url";
+import { Chat } from "./Chat";
 
 export function BrowseView() {
   const [multiplayerState, dispatch] = useAtom(multiplayerStateAtom);
@@ -56,7 +57,7 @@ export function BrowseView() {
 
   return (
     <Flex direction="column" flexGrow="1" width="1024px" align="stretch">
-      <Box width="100%">
+      <Flex width="100%">
         <form
           ref={formRef}
           onSubmit={(e) => {
@@ -65,15 +66,23 @@ export function BrowseView() {
           }}
           style={{ display: "contents" }}
         >
-          <TextField.Root ref={inputRef} placeholder="Url" name="user">
-            <TextField.Slot>
-              <FileTextIcon height="16" width="16" />
-            </TextField.Slot>
-          </TextField.Root>
+          <Box flexGrow="1">
+            <TextField.Root ref={inputRef} placeholder="Url" name="user">
+              <TextField.Slot>
+                <FileTextIcon height="16" width="16" />
+              </TextField.Slot>
+            </TextField.Root>
+          </Box>
         </form>
-      </Box>
+      </Flex>
       <div
-        style={{ flex: 1, width: "100%", height: "100%", position: "relative" }}
+        style={{
+          flex: 1,
+          width: "100%",
+          height: "100%",
+          position: "relative",
+          overflow: "hidden",
+        }}
       >
         <iframe
           style={{
@@ -124,6 +133,9 @@ export function BrowseView() {
             );
           }
         )}
+        <Box position="absolute" right="4" bottom="4">
+          <Chat />
+        </Box>
       </div>
     </Flex>
   );

@@ -1,6 +1,6 @@
 import { useAtom, useSetAtom } from "jotai";
 import { multiplayerStateAtom, User } from "../state/multiplayer";
-import { Card, Flex, Heading, Text } from "@radix-ui/themes";
+import { Box, Card, Flex, Heading, Text } from "@radix-ui/themes";
 import { radixColorFromId } from "@/shared/colors";
 import React from "react";
 import { urlAtom } from "@/state/url";
@@ -25,18 +25,23 @@ export function Portals() {
   );
 
   return (
-    <Card style={{ width: "100%", height: "100%" }}>
-      <Flex
-        direction="column"
-        gap="2"
-        style={{ width: "100%", height: "100%" }}
-      >
-        <Heading>Portals</Heading>
-        {sortedPages.map(([url, users]) => (
-          <Portal key={url} url={url} users={users} />
-        ))}
-      </Flex>
-    </Card>
+    <Box gridColumn={{ initial: "span 1", xl: "span 1" }}>
+      <Card style={{ height: "100%" }}>
+        <Flex
+          direction={{
+            initial: "row",
+            // xl: "column",
+          }}
+          gap="2"
+          style={{ width: "100%", height: "100%" }}
+        >
+          {/* <Heading>Portals</Heading> */}
+          {sortedPages.map(([url, users]) => (
+            <Portal key={url} url={url} users={users} />
+          ))}
+        </Flex>
+      </Card>
+    </Box>
   );
 }
 
@@ -56,7 +61,11 @@ function Portal({
       <Card asChild>
         <Flex direction="column" align="center" gap="1" p="0">
           <div
-            style={{ width: 1024 * 0.2, height: 768 * 0.2, overflow: "hidden" }}
+            style={{
+              width: 1024 * 0.2,
+              height: 768 * 0.2,
+              overflow: "hidden",
+            }}
           >
             <iframe
               src={`http://localhost:1999/party/my-room/portal?page=${encodeURIComponent(
@@ -81,7 +90,7 @@ function Portal({
                 </React.Fragment>
               ))}
             </Text>
-            <Text>is viewing this url</Text>
+            {/* <Text>is viewing this url</Text> */}
           </Flex>
         </Flex>
       </Card>
