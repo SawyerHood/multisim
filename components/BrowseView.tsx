@@ -30,13 +30,17 @@ export function BrowseView() {
           y: event.data.y,
         });
       }
+
+      if (event.data.type === "linkClick") {
+        setUrl(event.data.href);
+      }
     };
 
     window.addEventListener("message", messageListener);
     return () => {
       window.removeEventListener("message", messageListener);
     };
-  }, [dispatch]);
+  }, [dispatch, setUrl]);
 
   useEffect(() => {
     dispatch({
