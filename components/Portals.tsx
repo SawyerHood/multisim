@@ -1,7 +1,7 @@
 import { useAtom, useSetAtom } from "jotai";
 import { multiplayerStateAtom, User } from "../state/multiplayer";
 import { Box, Card, Flex, Heading, Text } from "@radix-ui/themes";
-import { radixColorFromId } from "@/shared/colors";
+import { cssVarFromId, radixColorFromId } from "@/shared/colors";
 import React from "react";
 import { urlAtom } from "@/state/url";
 
@@ -45,6 +45,8 @@ export function Portals() {
   );
 }
 
+const SCALE = 0.1;
+
 function Portal({
   url,
   users,
@@ -59,11 +61,17 @@ function Portal({
       onClick={() => setUrl(url)}
     >
       <Card asChild>
-        <Flex direction="column" align="center" gap="1" p="0">
+        <Flex
+          direction="column"
+          align="center"
+          gap="1"
+          p="0"
+          position="relative"
+        >
           <div
             style={{
-              width: 1024 * 0.2,
-              height: 768 * 0.2,
+              width: 1024 * SCALE,
+              height: 768 * SCALE,
               overflow: "hidden",
             }}
           >
@@ -75,25 +83,50 @@ function Portal({
               height={768}
               style={{
                 border: "none",
-                transform: "scale(0.2)",
+                transform: `scale(${SCALE})`,
                 transformOrigin: "0 0",
                 pointerEvents: "none",
               }}
             />
           </div>
-          <Flex direction="column" align="center" p="1">
+          <Flex
+            direction="row"
+            align="end"
+            p="1"
+            gap="1"
+            position="absolute"
+            bottom="1"
+            right="1"
+          >
             <Text truncate>
               {users.map((user, i) => (
-                <React.Fragment key={user.id}>
-                  <Text color={radixColorFromId(user.id)}>{user.username}</Text>
-                  {i < users.length - 1 && ", "}
-                </React.Fragment>
+                <Avatar user={user} key={user.id} />
               ))}
             </Text>
-            {/* <Text>is viewing this url</Text> */}
           </Flex>
         </Flex>
       </Card>
     </button>
+  );
+}
+
+function Avatar({ user }: { user: User & { id: string } }) {
+  const size = 20;
+  return (
+    <div
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        borderRadius: "50%",
+        backgroundColor: cssVarFromId(user.id),
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        fontSize: "12px",
+        color: "#fff",
+      }}
+    >
+      {user.username.charAt(0).toUpperCase()}
+    </div>
   );
 }
