@@ -98,11 +98,9 @@ function Portal({
             bottom="1"
             right="1"
           >
-            <Text truncate>
-              {users.map((user, i) => (
-                <Avatar user={user} key={user.id} />
-              ))}
-            </Text>
+            {users.map((user, i) => (
+              <Avatar user={user} key={user.id} />
+            ))}
           </Flex>
         </Flex>
       </Card>

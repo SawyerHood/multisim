@@ -114,6 +114,7 @@ export default class Server implements Party.Server {
   }
 
   onRequest(req: Party.Request): Response | Promise<Response> {
+    console.log("Start url request", req.url);
     if (!new URL(req.url).pathname.endsWith("portal")) {
       return new Response("", { status: 404 });
     }
@@ -129,7 +130,13 @@ export default class Server implements Party.Server {
         emitter: new EventEmitter(),
       };
       this.pageCache.set(pageId, cachedPage);
-      spawnLLMResponse(this, pageId);
+      spawnLLMResponse(this, pageId)
+        .then(() => {
+          console.log("LLM response done");
+        })
+        .catch((e: Error) => {
+          console.error("LLM response error", e.message);
+        });
     }
 
     if (cachedPage.status === "done") {
@@ -219,6 +226,7 @@ async function createProgramStream({
   user: string;
   model: string;
 }) {
+  console.log("CREATE PROGRAM STREAM");
   const params: ChatCompletionCreateParamsStreaming = {
     messages: [
       {

@@ -61,9 +61,11 @@ export function Login() {
                   fully fleshed out yet. Here are some caveats:
                 </Text>
                 <ul>
+                  <li>Doesn&apos;t work on mobile</li>
                   <li>
                     History and sharing permalinks is not implemented yet.
                   </li>
+                  <li>No back button</li>
                   <li>
                     Site generation is subpar at the moment. I have not spent
                     anytime iterating the prompting
