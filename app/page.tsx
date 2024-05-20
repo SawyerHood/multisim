@@ -26,7 +26,6 @@ export default function Home() {
       }}
       height="100vh"
       width="100%"
-      pt="4"
       py="2"
       px="2"
       gap="4"
