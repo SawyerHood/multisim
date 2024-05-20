@@ -77,7 +77,7 @@ function Portal({
           >
             <iframe
               src={`${
-                process.env.PARTY_KIT_URL
+                process.env.NEXT_PUBLIC_PARTY_KIT_URL
               }/party/my-room/portal?page=${encodeURIComponent(url)}`}
               width={1024}
               height={768}

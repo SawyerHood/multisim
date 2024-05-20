@@ -98,7 +98,7 @@ export function BrowseView() {
           src={
             url
               ? `${
-                  process.env.PARTY_KIT_URL
+                  process.env.NEXT_PUBLIC_PARTY_KIT_URL
                 }/party/my-room/portal?page=${encodeURIComponent(url)}`
               : undefined
           }

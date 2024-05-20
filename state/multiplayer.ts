@@ -35,7 +35,7 @@ const internalMultiplayerStateAtom = atom<MultiplayerState>({
 
 internalMultiplayerStateAtom.onMount = (set) => {
   const socket = new PartySocket({
-    host: process.env.PARTY_KIT_HOST!,
+    host: process.env.NEXT_PUBLIC_PARTY_KIT_HOST!,
     path: "client",
     room: "my-room",
   });
