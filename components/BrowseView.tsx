@@ -1,7 +1,7 @@
 "use client";
 
 import { FileTextIcon } from "@radix-ui/react-icons";
-import { Box, Flex, TextField, Text } from "@radix-ui/themes";
+import { Box, Flex, TextField, Text, Button } from "@radix-ui/themes";
 import { useEffect, useRef, useState } from "react";
 import { useAtom, useAtomValue } from "jotai";
 import { multiplayerStateAtom } from "@/state/multiplayer";
@@ -60,8 +60,14 @@ export function BrowseView() {
   }, [url, dispatch]);
 
   return (
-    <Flex direction="column" flexGrow="1" width="1024px" align="stretch">
-      <Flex width="100%">
+    <Flex
+      direction="column"
+      flexGrow="1"
+      width="1024px"
+      align="stretch"
+      gap="1"
+    >
+      <Flex width="100%" gap="1">
         <form
           ref={formRef}
           onSubmit={(e) => {
@@ -77,6 +83,7 @@ export function BrowseView() {
               </TextField.Slot>
             </TextField.Root>
           </Box>
+          <Button type="submit">Go</Button>
         </form>
       </Flex>
       <div
@@ -101,6 +108,14 @@ export function BrowseView() {
               ? `${
                   process.env.NEXT_PUBLIC_PARTY_KIT_URL
                 }/party/my-room/portal?page=${encodeURIComponent(url)}`
+              : undefined
+          }
+          srcDoc={
+            !url
+              ? `<html><body>
+                <div>^^^ Enter a url and go to hallucinate the web.</div>
+                <div>⌄⌄⌄ Click a page that someone else is on to join them!</div>
+              </body></html>`
               : undefined
           }
           name="output"
