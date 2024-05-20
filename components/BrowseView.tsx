@@ -97,9 +97,9 @@ export function BrowseView() {
           }}
           src={
             url
-              ? `http://localhost:1999/party/my-room/portal?page=${encodeURIComponent(
-                  url
-                )}`
+              ? `${
+                  process.env.PARTY_KIT_URL
+                }/party/my-room/portal?page=${encodeURIComponent(url)}`
               : undefined
           }
           name="output"

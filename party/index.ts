@@ -199,7 +199,7 @@ export async function spawnLLMResponse(server: Server, page: string) {
       const match = programResult.match(/<head>/);
       if (match) {
         programResult =
-          '<!DOCTYPE html><html><head><script src="http://localhost:3000/bootstrap.js"></script>\n' +
+          `<!DOCTYPE html><html><head><script src="${process.env.WEBAPP_URL}/bootstrap.js"></script>\n` +
           programResult.slice(match.index! + match[0].length);
         server.updatePage(page, programResult);
         sentIndex = programResult.length;
