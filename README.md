@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# MultiSim
 
-## Getting Started
+This is a proof of concept to show what it could be like to have a fully multiplayer version of WebSim (a browser where an LLM generates the webpages).
 
-First, run the development server:
+**How is it multiplayer?**
+
+- There is presence so you can see what pages other people are on.
+- If you are on the same page as someone else, you can see their multiplayer cursor
+- Multiple people can see a webpage stream in together
+- There is multiplayer chat so you can talk to other users
+
+> This is demoware / a proof of concept. I wrote this over a weekend and decided that I don't want to flesh it out, but it is architecturally interesting so it is worth sharing.
+
+## Getting started
+
+Create a `.env.local` file with the following:
+
+```
+OPENAI_API_KEY={Your Key}
+WEBAPP_URL=http://localhost:3000
+NEXT_PUBLIC_PARTY_KIT_HOST=localhost:1999
+NEXT_PUBLIC_PARTY_KIT_URL=http://localhost:1999
+```
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+bun i
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## How does it work?
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- The main shell of the app is a Next.js app that you can host anywhere.
+- There is a [partykit](https://www.partykit.io/) room that is powering the multiplayer features.
+- Right now there is an in memory cache of pages inside of the room.
+- All ai generation is handled on the partykit room. This lets llm generation get de-duped across clients.
+- There is a very small postMessage protocol for transmitting things like cursor positions between the iframe and the parent
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## What is missing?
 
-## Learn More
+There isn't any long term persistence of the pages or account management. Right now there is only a single hardcoded room as well. If you want to actually scale this you will need to be able to shard people into different servers. You really want the concept of a "party" or a "universe" where people can all jam on things together.
 
-To learn more about Next.js, take a look at the following resources:
+## Why did you stop working on this?
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+I started working on this because it would be a fun proof of concept. Once I proved to myself that I knew how to build it I stopped because I don't really want to build out a full fledged websim competitor.
