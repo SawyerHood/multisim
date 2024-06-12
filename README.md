@@ -2,6 +2,10 @@
 
 This is a proof of concept to show what it could be like to have a fully multiplayer version of WebSim (a browser where an LLM generates the webpages).
 
+
+https://github.com/SawyerHood/multisim/assets/2380669/1ee72222-1f85-4b8e-8c33-320eca9ee00e
+
+
 **How is it multiplayer?**
 
 - There is presence so you can see what pages other people are on.
